@@ -76,7 +76,7 @@ const App = () => {
   });
 
   const [startColor, setStartColor] = useState('#000000');
-  const [endColor, setEndColor] = useState('#ffffff');
+  const [endColor, setEndColor] = useState('#ff0000');
   const [numStops, setNumStops] = useState(10);
 
   const hsbToRgb = (h, s, v) => {
@@ -169,7 +169,7 @@ const App = () => {
               type="color"
               value={startColor}
               onChange={(e) => handleColorChange(true, e.target.value)}
-              className="w-20 h-8"
+              className="w-20 h-8 border border-black"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -178,10 +178,20 @@ const App = () => {
               type="color"
               value={endColor}
               onChange={(e) => handleColorChange(false, e.target.value)}
-              className="w-20 h-8"
+              className="w-20 h-8 border border-black"
             />
           </div>
         </div>
+
+        <ColourPreview
+  curves={curves}
+  numStops={numStops}
+  onNumStopsChange={setNumStops}
+  startColor={startColor}
+  endColor={endColor}
+/>
+
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CurveEditor
             type="hue"
@@ -199,11 +209,7 @@ const App = () => {
             onChange={(newCurve) => handleCurveChange('brightness', newCurve)}
           />
         </div>
-        <ColourPreview
-          curves={curves}
-          numStops={numStops}
-          onNumStopsChange={setNumStops}
-        />
+        
       </div>
     </div>
   );

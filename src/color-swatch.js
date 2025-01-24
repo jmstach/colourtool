@@ -11,7 +11,7 @@ const ColorSwatch = ({ color }) => {
         className="h-20 w-full"
         style={{ backgroundColor: rgbString }}
       />
-      <div className="text-xs p-1 text-center overflow-hidden">
+      <div className="text-xs p-1 text-left overflow-hidden">
         {`R: ${r} G: ${g} B: ${b}`}
       </div>
     </div>
