@@ -89,9 +89,10 @@ const CurveEditor = ({ type = 'curve', curve = defaultCurve, onChange = () => {}
     setDragging('path');
   };
 
+
   const handleMouseMove = (e) => {
     if (!dragging || !svgRef.current || !initialCurve) return;
-
+  
     const rect = svgRef.current.getBoundingClientRect();
     const viewBox = svgRef.current.viewBox.baseVal;
     const currentX = (e.clientX - rect.left) * (viewBox.width / rect.width);
@@ -100,7 +101,7 @@ const CurveEditor = ({ type = 'curve', curve = defaultCurve, onChange = () => {}
     if (dragging === 'path') {
       const deltaX = (currentX - dragStart.x) / graphWidth;
       const deltaY = -(currentY - dragStart.y) / graphHeight;
-
+      //console.log('curve-editor onChange:', dragging, fromSvgCoords(currentX, currentY));
       onChange({
         start: { 
           x: Math.max(0, Math.min(1, initialCurve.start.x + deltaX)),
@@ -121,25 +122,32 @@ const CurveEditor = ({ type = 'curve', curve = defaultCurve, onChange = () => {}
       });
     } else {
       const newPoint = fromSvgCoords(currentX, currentY);
+      const initialPoint = initialCurve[dragging];
+      const isDraggingControlPoint = dragging === 'p1' || dragging === 'p2';
       
-      // If shift key is pressed, constrain movement
+      // If shift key is pressed, lock to the axis of greatest movement
       if (e.shiftKey) {
-        const originalPoint = curve[dragging];
-        const isDraggingControlPoint = dragging === 'p1' || dragging === 'p2';
+        const deltaX = Math.abs(newPoint.x - initialPoint.x);
+        const deltaY = Math.abs(newPoint.y - initialPoint.y);
         
-        if (Math.abs(newPoint.x - originalPoint.x) > Math.abs(newPoint.y - originalPoint.y)) {
-          // Horizontal movement
-          newPoint.y = isDraggingControlPoint 
-            ? Math.max(minRange, Math.min(maxRange, originalPoint.y)) 
-            : Math.max(0, Math.min(1, originalPoint.y));
+        if (deltaX > deltaY) {
+          // Lock Y to initial position
+          newPoint.y = initialPoint.y;
         } else {
-          // Vertical movement
-          newPoint.x = isDraggingControlPoint 
-            ? Math.max(minRange, Math.min(maxRange, originalPoint.x)) 
-            : Math.max(0, Math.min(1, originalPoint.x));
+          // Lock X to initial position
+          newPoint.x = initialPoint.x;
         }
       }
-
+  
+      // Apply range constraints after axis locking
+      if (isDraggingControlPoint) {
+        newPoint.x = Math.max(minRange, Math.min(maxRange, newPoint.x));
+        newPoint.y = Math.max(minRange, Math.min(maxRange, newPoint.y));
+      } else {
+        newPoint.x = Math.max(0, Math.min(1, newPoint.x));
+        newPoint.y = Math.max(0, Math.min(1, newPoint.y));
+      }
+  
       onChange({
         ...curve,
         [dragging]: newPoint
@@ -284,7 +292,7 @@ const CurveEditor = ({ type = 'curve', curve = defaultCurve, onChange = () => {}
         onClick={resetCurve}
         className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
       >
-        Reset
+        To line
       </button>
 
       <div className="grid grid-cols-2 gap-4">
