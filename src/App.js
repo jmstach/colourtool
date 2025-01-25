@@ -43,7 +43,14 @@ const hexToRgb = (hex) => {
 
 const historyReducer = (state, action) => {
   switch (action.type) {
-    case 'PUSH':
+    case 'UPDATE':
+      if (action.previousState) {
+        return {
+          past: [...state.past, action.previousState],
+          present: action.payload,
+          future: []
+        };
+      }
       return {
         past: [...state.past, state.present],
         present: action.payload,
@@ -51,17 +58,21 @@ const historyReducer = (state, action) => {
       };
     case 'UNDO':
       if (state.past.length === 0) return state;
+      const previous = state.past[state.past.length - 1];
+      const newPast = state.past.slice(0, -1);
       return {
-        past: state.past.slice(0, -1),
-        present: state.past[state.past.length - 1],
+        past: newPast,
+        present: previous,
         future: [state.present, ...state.future]
       };
     case 'REDO':
       if (state.future.length === 0) return state;
+      const next = state.future[0];
+      const newFuture = state.future.slice(1);
       return {
         past: [...state.past, state.present],
-        present: state.future[0],
-        future: state.future.slice(1)
+        present: next,
+        future: newFuture
       };
     default:
       return state;
@@ -106,6 +117,7 @@ const App = () => {
   useEffect(() => {
     const handleKeyPress = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
         if (e.shiftKey) {
           dispatch({ type: 'REDO' });
         } else {
@@ -117,20 +129,25 @@ const App = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  const handleCurveChange = useCallback((type, newCurve) => {
-   // console.log('handleCurveChange:', type, newCurve);
+  const handleCurveChange = useCallback((type, newCurve, previousCurve) => {
     dispatch({
-      type: 'PUSH',
+      type: 'UPDATE',
       payload: {
+        ...state.present,
         curves: {
           ...curves,
           [type]: newCurve
-        },
-        startColor,
-        endColor
-      }
+        }
+      },
+      previousState: previousCurve ? {
+        ...state.present,
+        curves: {
+          ...curves,
+          [type]: previousCurve
+        }
+      } : undefined
     });
-  }, [curves, startColor, endColor]);
+  }, [curves, state.present]);
 
   const handleColorChange = useCallback((isStart, hex) => {
     const rgb = hexToRgb(hex);
@@ -139,8 +156,9 @@ const App = () => {
     const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
     
     dispatch({
-      type: 'PUSH',
+      type: 'UPDATE',
       payload: {
+        ...state.present,
         curves: {
           ...curves,
           hue: { 
@@ -169,7 +187,7 @@ const App = () => {
         endColor: isStart ? endColor : hex
       }
     });
-  }, [curves, startColor, endColor]);
+  }, [curves, startColor, endColor, state.present]);
 
   return (
     <div className="container mx-auto p-4">
@@ -195,7 +213,22 @@ const App = () => {
               />
             </div>
           </div>
-          
+          <div className="flex gap-2">
+            <button
+              onClick={() => dispatch({ type: 'UNDO' })}
+              disabled={state.past.length === 0}
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+            >
+              Undo
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'REDO' })}
+              disabled={state.future.length === 0}
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+            >
+              Redo
+            </button>
+          </div>
         </div>
 
         <ColourPreview
@@ -206,21 +239,21 @@ const App = () => {
           endColor={endColor}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CurveEditor
             type="hue"
             curve={curves.hue}
-            onChange={(newCurve) => handleCurveChange('hue', newCurve)}
+            onChange={(newCurve, previousCurve) => handleCurveChange('hue', newCurve, previousCurve)}
           />
           <CurveEditor
             type="saturation"
             curve={curves.saturation}
-            onChange={(newCurve) => handleCurveChange('saturation', newCurve)}
+            onChange={(newCurve, previousCurve) => handleCurveChange('saturation', newCurve, previousCurve)}
           />
           <CurveEditor
             type="brightness"
             curve={curves.brightness}
-            onChange={(newCurve) => handleCurveChange('brightness', newCurve)}
+            onChange={(newCurve, previousCurve) => handleCurveChange('brightness', newCurve, previousCurve)}
           />
         </div>
       </div>
