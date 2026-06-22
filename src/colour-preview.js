@@ -97,6 +97,7 @@ const rgbToHsl = (r, g, b) => {
       case r: h = (g - b) / d + (g < b ? 6 : 0); break;
       case g: h = (b - r) / d + 2; break;
       case b: h = (r - g) / d + 4; break;
+      default: break;
     }
     h /= 6;
   }
